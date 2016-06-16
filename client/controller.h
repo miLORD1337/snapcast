@@ -29,6 +29,8 @@
 #include "player/alsaPlayer.h"
 #elif HAS_OPENSL
 #include "player/openslPlayer.h"
+#elif WINDOWS
+#include "player/wasapiPlayer.h"
 #endif
 #include "clientConnection.h"
 #include "stream.h"

@@ -31,16 +31,25 @@
 #include <memory>
 #include <cerrno>
 #include <iterator>
+#ifndef WINDOWS
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <iomanip>
+#ifndef WINDOWS
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
+#endif
 
+#ifdef WINDOWS
+#include <chrono>
+#include <windows.h>
+#include <direct.h>
+#endif
 
 // trim from start
 static inline std::string &ltrim(std::string &s)
@@ -137,7 +146,11 @@ static int mkdirRecursive(const char *path, mode_t mode)
 		if (p.empty())
 			continue;
 		ss << "/" << p;
+#ifndef WINDOWS
 		int res = mkdir(ss.str().c_str(), mode);
+#else
+		int res = _mkdir(ss.str().c_str());
+#endif
 		if ((res != 0) && (errno != EEXIST))
 			return res;
 	}
@@ -191,9 +204,13 @@ static std::string getOS()
 	}
 	if (os.empty())
 	{
+#ifndef WINDOWS
 		utsname u;
 		uname(&u);
 		os = u.sysname;
+#else
+		os = "Windows";
+#endif
 	}
 	return trim_copy(os);
 }
@@ -232,14 +249,19 @@ static std::string getArch()
 
 static long uptime()
 {
+#ifndef WINDOWS
 	struct sysinfo info;
 	sysinfo(&info);
 	return info.uptime;
+#else
+	return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::milliseconds(GetTickCount())).count();
+#endif
 }
 
 
 static std::string getMacAddress(int sock)
 {
+#ifndef WINDOWS // TODO http://stackoverflow.com/questions/2069855/getting-machines-mac-address-good-solution
 	struct ifreq ifr;
 	struct ifconf ifc;
 	char buf[1024];
@@ -294,6 +316,8 @@ static std::string getMacAddress(int sock)
 		(unsigned char)ifr.ifr_hwaddr.sa_data[0], (unsigned char)ifr.ifr_hwaddr.sa_data[1], (unsigned char)ifr.ifr_hwaddr.sa_data[2],
 		(unsigned char)ifr.ifr_hwaddr.sa_data[3], (unsigned char)ifr.ifr_hwaddr.sa_data[4], (unsigned char)ifr.ifr_hwaddr.sa_data[5]);
 	return mac;
+#endif
+	return "";
 }
 
 

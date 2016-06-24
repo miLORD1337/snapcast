@@ -49,6 +49,7 @@
 #include <chrono>
 #include <windows.h>
 #include <direct.h>
+#include <winsock2.h>
 #endif
 
 // trim from start

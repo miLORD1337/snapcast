@@ -7,3 +7,9 @@
 [submodule "externals/flac"]
 	path = externals/flac
 	url = https://git.xiph.org/flac.git
+[submodule "externals/ogg"]
+	path = externals/ogg
+	url = https://git.xiph.org/ogg.git
+[submodule "externals/vorbis"]
+	path = externals/vorbis
+	url = https://git.xiph.org/vorbis.git

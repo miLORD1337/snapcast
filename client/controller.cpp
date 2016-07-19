@@ -116,8 +116,10 @@ void Controller::onMessageReceived(ClientConnection* connection, const msg::Base
 		player_.reset(new AlsaPlayer(pcmDevice_, stream_.get()));
 #elif HAS_OPENSL
 		player_.reset(new OpenslPlayer(pcmDevice_, stream_.get()));
+#elif HAS_WASAPI
+		player_.reset(new WASAPIPlayer(pcmDevice_, stream_.get()));
 #else
-		throw SnapException("No ALSA or OPENSL support");
+		throw SnapException("No ALSA, OPENSL, or WASAPI support");
 #endif
 		player_->setVolume(serverSettings_->getVolume() / 100.);
 		player_->setMute(serverSettings_->isMuted());

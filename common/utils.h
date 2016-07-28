@@ -50,6 +50,8 @@
 #include <windows.h>
 #include <direct.h>
 #include <winsock2.h>
+#include <iphlpapi.h>
+#include <versionhelpers.h>
 #endif
 
 // trim from start
@@ -188,6 +190,33 @@ static std::string getOS()
 	std::string os;
 #ifdef ANDROID
 	os = trim_copy("Android " + getProp("ro.build.version.release"));
+#elif WINDOWS
+	if (IsWindows10OrGreater())
+		os = "Windows 10";
+	else if (IsWindows8Point1OrGreater())
+		os = "Windows 8.1";
+	else if (IsWindows8OrGreater())
+		os = "Windows 8";
+	else if (IsWindows7SP1OrGreater())
+		os = "Windows 7 SP1";
+	else if (IsWindows7OrGreater())
+		os = "Windows 7";
+	else if (IsWindowsVistaSP2OrGreater())
+		os = "Windows Vista SP2";
+	else if (IsWindowsVistaSP1OrGreater())
+		os = "Windows Vista SP1";
+	else if (IsWindowsVistaOrGreater())
+		os = "Windows Vista";
+	else if (IsWindowsXPSP3OrGreater())
+		os = "Windows XP SP3";
+	else if (IsWindowsXPSP2OrGreater())
+		os = "Windows XP SP2";
+	else if (IsWindowsXPSP1OrGreater())
+		os = "Windows XP SP1";
+	else if (IsWindowsXPOrGreater())
+		os = "Windows XP";
+	else
+		os = "Unknown Windows";
 #else
 	os = execGetOutput("lsb_release -d");
 	if (os.find(":") != std::string::npos)
@@ -203,16 +232,14 @@ static std::string getOS()
 			os.erase(std::remove(os.begin(), os.end(), '\''), os.end());
 		}
 	}
+#ifndef WINDOWS
 	if (os.empty())
 	{
-#ifndef WINDOWS
 		utsname u;
 		uname(&u);
 		os = u.sysname;
-#else
-		os = "Windows";
-#endif
 	}
+#endif
 	return trim_copy(os);
 }
 
@@ -230,7 +257,6 @@ static std::string getHostName()
 	return hostname;
 }
 
-
 static std::string getArch()
 {
 	std::string arch;
@@ -239,11 +265,39 @@ static std::string getArch()
 	if (!arch.empty())
 		return arch;
 #endif
+#ifndef WINDOWS
 	arch = execGetOutput("arch");
 	if (arch.empty())
 		arch = execGetOutput("uname -i");
 	if (arch.empty() || (arch == "unknown"))
 		arch = execGetOutput("uname -m");
+#else
+	SYSTEM_INFO sysInfo;
+	GetSystemInfo(&sysInfo);
+	switch (sysInfo.wProcessorArchitecture)
+	{
+	case PROCESSOR_ARCHITECTURE_AMD64:
+		arch = "amd64";
+		break;
+		
+	case PROCESSOR_ARCHITECTURE_ARM:
+		arch = "arm";
+		break;
+		
+	case PROCESSOR_ARCHITECTURE_IA64:
+		arch = "ia64";
+		break;
+		
+	case PROCESSOR_ARCHITECTURE_INTEL:
+		arch = "intel";
+		break;
+		
+	default:
+	case PROCESSOR_ARCHITECTURE_UNKNOWN:
+		arch = "unknown";
+		break;
+	}
+#endif
 	return trim_copy(arch);
 }
 
@@ -259,10 +313,9 @@ static long uptime()
 #endif
 }
 
-
+#ifndef WINDOWS
 static std::string getMacAddress(int sock)
 {
-#ifndef WINDOWS // TODO http://stackoverflow.com/questions/2069855/getting-machines-mac-address-good-solution
 	struct ifreq ifr;
 	struct ifconf ifc;
 	char buf[1024];
@@ -317,11 +370,43 @@ static std::string getMacAddress(int sock)
 		(unsigned char)ifr.ifr_hwaddr.sa_data[0], (unsigned char)ifr.ifr_hwaddr.sa_data[1], (unsigned char)ifr.ifr_hwaddr.sa_data[2],
 		(unsigned char)ifr.ifr_hwaddr.sa_data[3], (unsigned char)ifr.ifr_hwaddr.sa_data[4], (unsigned char)ifr.ifr_hwaddr.sa_data[5]);
 	return mac;
-#endif
-	return "";
 }
+#else
+static std::string getMacAddress(const std::string& address)
+{
+	IP_ADAPTER_INFO* first;
+	IP_ADAPTER_INFO* pos;
+	ULONG bufferLength = sizeof(IP_ADAPTER_INFO);
+	first = (IP_ADAPTER_INFO*)malloc(bufferLength);
 
+	if (GetAdaptersInfo(first, &bufferLength) == ERROR_BUFFER_OVERFLOW)
+	{
+		free(first);
+		first = (IP_ADAPTER_INFO*)malloc(bufferLength);
+	}
 
+	char mac[19];
+	if (GetAdaptersInfo(first, &bufferLength) == NO_ERROR)
+		for (pos = first; pos != NULL; pos = pos->Next)
+		{
+			IP_ADDR_STRING* firstAddr = &pos->IpAddressList;
+			IP_ADDR_STRING* posAddr;
+			for (posAddr = firstAddr; posAddr != NULL; posAddr = posAddr->Next)
+				if (_stricmp(posAddr->IpAddress.String, address.c_str()) == 0)
+				{
+					sprintf(mac, "%02x:%02x:%02x:%02x:%02x:%02x",
+									pos->Address[0], pos->Address[1], pos->Address[2],
+									pos->Address[3], pos->Address[4], pos->Address[5]);
+					
+					free(first);
+					return mac;
+				}
+		}
+	else
+		free(first);
+	
+	return mac;
+}
 #endif
 
-
+#endif

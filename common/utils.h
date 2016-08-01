@@ -222,7 +222,6 @@ static std::string getOS()
 	os = execGetOutput("lsb_release -d");
 	if (os.find(":") != std::string::npos)
 		os = trim_copy(os.substr(os.find(":") + 1));
-#endif
 	if (os.empty())
 	{
 		os = trim_copy(execGetOutput("cat /etc/os-release /etc/openwrt_release |grep -e PRETTY_NAME -e DISTRIB_DESCRIPTION"));
@@ -233,6 +232,7 @@ static std::string getOS()
 			os.erase(std::remove(os.begin(), os.end(), '\''), os.end());
 		}
 	}
+#endif
 #ifndef WINDOWS
 	if (os.empty())
 	{

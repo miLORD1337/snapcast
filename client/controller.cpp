@@ -213,7 +213,7 @@ void Controller::worker()
 			stream_.reset();
 			decoder_.reset();
 			for (size_t n=0; (n<10) && active_; ++n)
-				usleep(100*1000);
+				this_thread::sleep_for(chrono::microseconds(100*1000));
 		}
 	}
 	logD << "Thread stopped\n";

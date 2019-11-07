@@ -70,7 +70,7 @@ inline static int clock_gettime(int dummy, struct timespec *ct)
 
 namespace chronos
 {
-	typedef std::chrono::high_resolution_clock hrc;
+	typedef std::chrono::system_clock hrc;
 	typedef std::chrono::time_point<hrc> time_point_hrc;
 	typedef std::chrono::seconds sec;
 	typedef std::chrono::milliseconds msec;

@@ -1,5 +1,6 @@
 #include "wasapiPlayer.h"
 
+#include <functional>
 #include <audioclient.h>
 #include <mmdeviceapi.h>
 #include <comdef.h>
